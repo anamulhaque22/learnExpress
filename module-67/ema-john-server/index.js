@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const cors = require('cors');
 const port = process.env.PORT || 5000;
@@ -22,7 +22,6 @@ async function run() {
         app.get('/product', async (req, res) => {
             const page = parseInt(req.query.page);
             const numOfProduct = parseInt(req.query.size);
-            console.log("page ",page," Num of Pro: ", numOfProduct);
             const query = {};
             const cursor = productCollection.find(query);
             let products;
@@ -33,6 +32,17 @@ async function run() {
             }
             res.send(products);
         });
+
+        //get the product using id
+        app.post('/productbyid', async(req, res)=>{
+            const keys = req.body;
+            const ids = keys.map(key => ObjectId(key))
+            const query = {_id: {$in: ids}};
+            const cursor = productCollection.find(query);
+            const products = await cursor.toArray();
+            res.send(products);
+        })
+
 
         app.get('/pagination', async (req, res) => {
             const count = await productCollection.estimatedDocumentCount();
