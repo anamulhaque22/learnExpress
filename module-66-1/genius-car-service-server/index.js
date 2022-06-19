@@ -20,8 +20,10 @@ function verifyJWT(req, res, next) {
             return res.status(403).send({ message: "Forbidden access" });
         }
         console.log("decoder", decoder);
+        req.decoded = decoder;
+        next();
     });
-    next();
+
 }
 
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Password}@cluster0.ttpkp.mongodb.net/?retryWrites=true&w=majority`;
@@ -32,8 +34,9 @@ async function run() {
         const servieceCollectin = client.db('geniusCarService').collection('services');
         const orderCollection = client.db('geniusCarService').collection('order');
         // Auth
-        app.post('/login', async (req, res) => {
+        app.post('/login', (req, res) => {
             const user = req.body;
+            console.log(req.body);
             const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
                 expiresIn: '2d'
             });
@@ -89,10 +92,15 @@ async function run() {
 
         //get order
         app.get('/order', verifyJWT, async (req, res) => {
-            const query = req.query;
-            const cursor = orderCollection.find(query);
-            const result = await cursor.toArray();
-            res.send(result);
+            const decodedEmail = req?.decoded?.email;
+            if (req.query.userEmail === decodedEmail) {
+                const query = req.query;
+                const cursor = orderCollection.find(query);
+                const result = await cursor.toArray();
+                res.send(result);
+            } else {
+                res.status(403).send({ message: 'Forbidden Access' });
+            }
         })
 
     } finally {
