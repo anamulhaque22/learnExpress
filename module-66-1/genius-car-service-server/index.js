@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
@@ -16,6 +17,19 @@ async function run() {
         await client.connect();
         const servieceCollectin = client.db('geniusCarService').collection('services');
         const orderCollection = client.db('geniusCarService').collection('order');
+        // Auth
+        app.post('/login', async (req, res)=> {
+            const user = req.body;
+            var toke = jwt.sign({ foo: 'bar' }, 'shhhhh');
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1d'
+            });
+            res.send({toke});
+        })
+
+
+
+
 
         //all service
         app.get('/service', async (req, res) => {
@@ -59,10 +73,10 @@ async function run() {
             const result = await orderCollection.insertOne(order);
             res.send(result);
         })
-        
+
         //get order
-        app.get('/order', async(req, res)=> {
-            const query = {};
+        app.get('/order', async (req, res) => {
+            const query = req.query;
             const cursor = orderCollection.find(query);
             const result = await cursor.toArray();
             res.send(result);
