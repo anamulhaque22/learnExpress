@@ -9,6 +9,20 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: "unauthorized access" });
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoder) => {
+        if (err) {
+            return res.status(403).send({ message: "Forbidden access" });
+        }
+        console.log("decoder", decoder);
+    });
+    next();
+}
 
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Password}@cluster0.ttpkp.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -18,13 +32,12 @@ async function run() {
         const servieceCollectin = client.db('geniusCarService').collection('services');
         const orderCollection = client.db('geniusCarService').collection('order');
         // Auth
-        app.post('/login', async (req, res)=> {
+        app.post('/login', async (req, res) => {
             const user = req.body;
-            var toke = jwt.sign({ foo: 'bar' }, 'shhhhh');
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-                expiresIn: '1d'
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '2d'
             });
-            res.send({toke});
+            res.send({ accessToken });
         })
 
 
@@ -75,7 +88,7 @@ async function run() {
         })
 
         //get order
-        app.get('/order', async (req, res) => {
+        app.get('/order', verifyJWT, async (req, res) => {
             const query = req.query;
             const cursor = orderCollection.find(query);
             const result = await cursor.toArray();
