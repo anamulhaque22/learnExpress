@@ -59,6 +59,14 @@ async function run() {
             const result = await orderCollection.insertOne(order);
             res.send(result);
         })
+        
+        //get order
+        app.get('/order', async(req, res)=> {
+            const query = {};
+            const cursor = orderCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
 
     } finally {
         //await client.close();
